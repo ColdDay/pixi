@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<script src="js/pixi.min.js"></script>
+	<script src="js/zepto.js"></script>
+	<style type="text/css">
+		canvas{
+			width: 800px;
+			height: 600px;
+			margin: 0 auto;
+			border:1px solid gray;
+			display: block;
+		}
+	</style>
+</head>
+<body>
+<script type="text/javascript">
+	var score = 0;
+	var showBoss = false;
+	var moveTop = null;
+	var moveLeft = null;
+	var moveRight = null;
+	var moveBottom = null;
+	var app = new PIXI.Application();
+	document.body.appendChild(app.view);
+	var AppW = app.renderer.width;
+	var AppH = app.renderer.height;
+	var opt = {
+		speed:3,
+		duck_speed:1,
+		fish_speed:2,
+		snail_speed:0.3,
+		lobster_speed:1.5
+	}
+	var features = [];	//存放海洋中的生物
+	//鸭子
+	PIXI.loader.add('sea','images/sea.png')
+						.add('me','images/fish.png')
+						.add('duck','images/duck.png')
+						.add('fish','images/fish.png')
+						.add('snail','images/snail.png')
+						.add('lobster','images/lobster.png')
+						.add('shark','images/shark.png')
+
+	PIXI.loader.load(function(loader, resources){
+
+		//创建背景
+		window.sea = new PIXI.Sprite(resources.sea.texture);
+		sea.x = 0;
+		sea.y = 0;
+		app.stage.addChild(sea);
+
+		//创建分数面板
+		window.scoreText = new PIXI.Text('你的分数：'+score,{fontFamily : 'Arial', fontSize: 24, fill : 0xff1010, align : 'center'});
+		scoreText.x = 600;
+		scoreText.y = 10;
+		app.stage.addChild(scoreText);
+		//主角
+		window.me = new PIXI.Sprite(resources.me.texture);
+		me.x = AppW/2;
+		me.y = AppH /2;
+		app.stage.addChild(me);
+		me.level = 1;
+
+		var fish = new PIXI.Sprite(resources.fish.texture);
+		fish.x = AppW * Math.random();
+		fish.y = AppH * Math.random();
+		app.stage.addChild(fish);
+		features.push(fish);
+		fish.level = 1;
+		fish.name = 'fish';
+
+		var duck = new PIXI.Sprite(resources.duck.texture);
+		duck.x = AppW * Math.random();
+		duck.y = AppH * Math.random();
+		app.stage.addChild(duck);
+		features.push(duck);
+		duck.level = 1;
+		duck.name = 'duck';
+
+		var snail = new PIXI.Sprite(resources.snail.texture);
+		snail.x = AppW * Math.random();
+		snail.y = AppH * Math.random();
+		app.stage.addChild(snail);
+		features.push(snail);
+		snail.level = 2;	//蜗牛壳硬，咬一口会死人的
+		snail.name = 'snail';
+
+		var lobster = new PIXI.Sprite(resources.lobster.texture);
+		lobster.x = AppW * Math.random();
+		lobster.y = AppH * Math.random();
+		app.stage.addChild(lobster);
+		features.push(lobster);
+		lobster.level= 3;
+		lobster.name = 'lobster';
+
+		//大鲨鱼
+		var shark = new PIXI.Sprite(resources.shark.texture);
+		shark.x = 1000;
+		shark.y = AppH * Math.random();
+		app.stage.addChild(shark);
+		features.push(shark);
+		shark.level = 5;
+		shark.name = 'shark';
+
+
+		app.ticker.add(function(){
+			//控制主角鸭子的行为
+			if(moveLeft){
+				if(me.x > 0){
+					me.x -= opt.speed;
+				}
+			} 
+			if(moveRight){
+				if(me.x < AppW - me.width){
+					me.x += opt.speed;
+				}
+			} 
+			if(moveTop){
+				if(me.y > 0){
+					me.y -= opt.speed;
+				}
+			}
+			if(moveBottom){
+				if(me.y < AppH - me.height){
+					me.y += opt.speed;
+				}
+			}
+
+			//监听鸭子
+			duck.x += 1;
+			if(duck.x > AppW){
+				duck.x = duck.width*-opt.duck_speed;
+				duck.y = Math.random()*AppH
+			}
+			//监听螃蟹
+			lobster.x += opt.lobster_speed;
+			if(lobster.x > AppW){
+				lobster.x = lobster.width*-1;
+				lobster.y = Math.random()*AppH
+			}
+			//监听小鱼
+			fish.x += opt.fish_speed;
+			if(fish.x > AppW){
+				fish.x = fish.width*-1;
+				fish.y = Math.random()*AppH
+			}
+			//监听蜗牛
+			snail.x += opt.snail_speed;
+			if(snail.x > AppW){
+				snail.x = snail.width*-1;
+				snail.y = Math.random()*AppH
+			}
+
+			if(showBoss){
+				shark.x -= opt.fish_speed;
+				if(shark.x < 0){
+					shark.x = 1000;
+					shark.y = Math.random()*AppH
+				}
+			}
+			
+
+
+			//检测碰撞
+			for(var i in features){
+				var obj = features[i];
+				if(checkCrash(obj,me)){
+					if(obj.level > me.level){
+						//go die
+						goDie('die',obj,me);
+						break;
+					}else{
+						score = score + 20 * obj.level;
+						scoreText.text= '你的分数：'+ score;
+						if(score >=3000){
+							goDie('win')
+						}
+						if(score >= 100*me.level){
+							//升级主角
+							levelTop(me);
+						}
+					}
+					//吃掉---将元素位置重置
+					obj.x = obj.width*-1;
+					obj.y = Math.random()*AppH
+				}
+			}
+		})
+	})
+
+	$(document).keydown(function(event){ 
+		if(event.keyCode == 37){ 
+			window.moveLeft = true;
+			me.setTransform(me.x,me.y,me.level,me.level,360);
+		}else if (event.keyCode == 39){ 
+			window.moveRight = true;
+			me.setTransform(me.x,me.y,me.level,me.level,0);
+		}else if (event.keyCode == 38){ 
+			window.moveTop = true;
+		}else if (event.keyCode == 40){ 
+			window.moveBottom = true;
+		} 
+	});
+	$(document).keyup(function(event){ 
+		if(event.keyCode == 37){ 
+			window.moveLeft = false;
+		}else if (event.keyCode == 39){ 
+			window.moveRight = false;
+		}else if (event.keyCode == 38){ 
+			window.moveTop = false;
+		}else if (event.keyCode == 40){ 
+			window.moveBottom = false;
+		} 
+	});
+	function goDie(type,boss,you){
+		//创建分数面板
+		var text = '你歇菜了！'
+		if(boss.name == 'lobster'){
+			text = '想吃螃蟹？'
+		}
+		if(type == 'win'){
+			text = '少年，不要沉迷于游戏'
+		}
+		window.goDieText = new PIXI.Text(text,{fontFamily : 'Arial', fontSize: 56, fill : 0xff1010, align : 'center'});
+		goDieText.x = 300;
+		goDieText.y = 200;
+		app.stage.addChild(goDieText);
+		you.destroy();
+		//app.stop();
+	}
+	function levelTop(obj){
+		console.log('升级');
+		if(obj.level >= 3){
+			window.showBoss = true;
+			return;
+		}
+		obj.level +=1;
+		obj.setTransform(obj.x,obj.y,obj.level,obj.level);
+		opt.speed = opt.speed*1.5;
+	}
+	//检测碰撞
+	function checkCrash (obj1,obj2){
+		var bounds = obj2.getBounds();
+		var x1 = obj1.x;
+		var x2 = obj1.x + obj1.width;
+		var y1 = obj1.y;
+		var y2 = obj1.y + obj1.height;
+		
+		if(bounds.contains(x1,y1) || bounds.contains(x2,y1) || bounds.contains(x1,y2) || bounds.contains(x2,y2)){
+			return true;
+		}else{
+			return false;
+		}
+}
+
+
+
+
+</script>
+</body>
+</html>
