@@ -62,7 +62,8 @@
 		me.y = AppH /2;
 		app.stage.addChild(me);
 		me.level = 1;
-
+		me.anchor.set(0.5);
+		
 		var fish = new PIXI.Sprite(resources.fish.texture);
 		fish.x = AppW * Math.random();
 		fish.y = AppH * Math.random();
@@ -94,7 +95,7 @@
 		features.push(lobster);
 		lobster.level= 3;
 		lobster.name = 'lobster';
-
+		lobster.rotation = 180 /57.29578;
 		//大鲨鱼
 		var shark = new PIXI.Sprite(resources.shark.texture);
 		shark.x = 1000;
@@ -135,9 +136,9 @@
 				duck.y = Math.random()*AppH
 			}
 			//监听螃蟹
-			lobster.x += opt.lobster_speed;
-			if(lobster.x > AppW){
-				lobster.x = lobster.width*-1;
+			lobster.x -= opt.lobster_speed;
+			if(lobster.x < 0){
+				lobster.x = 1000;
 				lobster.y = Math.random()*AppH
 			}
 			//监听小鱼
@@ -193,7 +194,8 @@
 	$(document).keydown(function(event){ 
 		if(event.keyCode == 37){ 
 			window.moveLeft = true;
-			me.setTransform(me.x,me.y,me.level,me.level,360);
+			me.anchor.set(0.5);
+			me.rotation = 180 /57.29578;
 		}else if (event.keyCode == 39){ 
 			window.moveRight = true;
 			me.setTransform(me.x,me.y,me.level,me.level,0);
