@@ -97,8 +97,8 @@
 		features.push(lobster);
 		lobster.level= 3;
 		lobster.name = 'lobster';
-		lobster.anchor.set(0.5);
-		lobster.rotation = 180 /57.29578;
+		//lobster.anchor.set(0.5);
+		//lobster.rotation = 180 /57.29578;
 
 	
 
@@ -222,7 +222,7 @@
 				me.rotation = 180 /57.29578;
 			}else if (event.keyCode == 39){ 
 				window.moveRight = true;
-				me.setTransform(me.x,me.y,me.level,me.level,0);
+				me.rotation = 0;
 			}else if (event.keyCode == 38){ 
 				window.moveTop = true;
 			}else if (event.keyCode == 40){ 
@@ -281,9 +281,17 @@
 		var y1 = obj1.y;
 		var y2 = obj1.y + obj1.height;
 		
+		var bounds2 = obj1.getBounds();
+		var x12 = obj2.x;
+		var x22 = obj2.x + obj2.width;
+		var y12 = obj2.y;
+		var y22 = obj2.y + obj2.height;
+
 		if(bounds.contains(x1,y1) || bounds.contains(x2,y1) || bounds.contains(x1,y2) || bounds.contains(x2,y2)){
 			return true;
-		}else{
+		}else if(bounds2.contains(x12,y12) || bounds2.contains(x22,y12) || bounds2.contains(x12,y22) || bounds2.contains(x22,y22)){
+			return true;
+		} else{
 			return false;
 		}
 }
