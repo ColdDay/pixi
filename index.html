@@ -27,11 +27,12 @@
 	var AppW = app.renderer.width;
 	var AppH = app.renderer.height;
 	var opt = {
-		speed:3,
+		speed:5,
 		duck_speed:1,
 		fish_speed:2,
-		snail_speed:0.3,
-		lobster_speed:1.5
+		snail_speed:8,
+		lobster_speed:1.5,
+		shark_speed:6
 	}
 	var features = [];	//存放海洋中的生物
 	//鸭子
@@ -42,6 +43,7 @@
 						.add('snail','images/snail.png')
 						.add('lobster','images/lobster.png')
 						.add('shark','images/shark.png')
+						.add('bomb','images/bomb.png')
 
 	PIXI.loader.load(function(loader, resources){
 
@@ -63,7 +65,7 @@
 		app.stage.addChild(me);
 		me.level = 1;
 		me.anchor.set(0.5);
-		
+
 		var fish = new PIXI.Sprite(resources.fish.texture);
 		fish.x = AppW * Math.random();
 		fish.y = AppH * Math.random();
@@ -95,7 +97,19 @@
 		features.push(lobster);
 		lobster.level= 3;
 		lobster.name = 'lobster';
+		lobster.anchor.set(0.5);
 		lobster.rotation = 180 /57.29578;
+
+	
+
+		var bomb = new PIXI.Sprite(resources.bomb.texture);
+		bomb.x = AppW * Math.random();
+		bomb.y = AppH * Math.random()*-1;
+		app.stage.addChild(bomb);
+		features.push(bomb);
+		bomb.level = 999;	
+		bomb.name = 'bomb';
+
 		//大鲨鱼
 		var shark = new PIXI.Sprite(resources.shark.texture);
 		shark.x = 1000;
@@ -109,22 +123,22 @@
 		app.ticker.add(function(){
 			//控制主角鸭子的行为
 			if(moveLeft){
-				if(me.x > 0){
+				if(me.x > 0 + me.width/2){
 					me.x -= opt.speed;
 				}
 			} 
 			if(moveRight){
-				if(me.x < AppW - me.width){
+				if(me.x < AppW  - me.width/2){
 					me.x += opt.speed;
 				}
 			} 
 			if(moveTop){
-				if(me.y > 0){
+				if(me.y > 0 + me.height/2){
 					me.y -= opt.speed;
 				}
 			}
 			if(moveBottom){
-				if(me.y < AppH - me.height){
+				if(me.y < AppH - me.height/2){
 					me.y += opt.speed;
 				}
 			}
@@ -153,14 +167,23 @@
 				snail.x = snail.width*-1;
 				snail.y = Math.random()*AppH
 			}
-
+			//鲨鱼
 			if(showBoss){
-				shark.x -= opt.fish_speed;
+				shark.x -= opt.shark_speed;
 				if(shark.x < 0){
 					shark.x = 1000;
 					shark.y = Math.random()*AppH
 				}
 			}
+			//鲨鱼
+			
+			bomb.y += opt.shark_speed;
+			if(bomb.y > AppH){
+				bomb.x = Math.random()*AppH;
+				bomb.y = bomb.height*-1;
+			}
+			
+			
 			
 
 
@@ -191,19 +214,22 @@
 		})
 	})
 
-	$(document).keydown(function(event){ 
-		if(event.keyCode == 37){ 
-			window.moveLeft = true;
-			me.anchor.set(0.5);
-			me.rotation = 180 /57.29578;
-		}else if (event.keyCode == 39){ 
-			window.moveRight = true;
-			me.setTransform(me.x,me.y,me.level,me.level,0);
-		}else if (event.keyCode == 38){ 
-			window.moveTop = true;
-		}else if (event.keyCode == 40){ 
-			window.moveBottom = true;
-		} 
+	$(document).keydown(function(event){
+		if(status != 'over'){
+			if(event.keyCode == 37){ 
+				window.moveLeft = true;
+				me.anchor.set(0.5);
+				me.rotation = 180 /57.29578;
+			}else if (event.keyCode == 39){ 
+				window.moveRight = true;
+				me.setTransform(me.x,me.y,me.level,me.level,0);
+			}else if (event.keyCode == 38){ 
+				window.moveTop = true;
+			}else if (event.keyCode == 40){ 
+				window.moveBottom = true;
+			} 
+		}
+		
 	});
 	$(document).keyup(function(event){ 
 		if(event.keyCode == 37){ 
@@ -218,19 +244,24 @@
 	});
 	function goDie(type,boss,you){
 		//创建分数面板
-		var text = '你歇菜了！'
+		var text = '你歇菜了'
 		if(boss.name == 'lobster'){
-			text = '想吃螃蟹？'
+			text = '螃蟹有毒'
 		}
 		if(type == 'win'){
 			text = '少年，不要沉迷于游戏'
 		}
-		window.goDieText = new PIXI.Text(text,{fontFamily : 'Arial', fontSize: 56, fill : 0xff1010, align : 'center'});
-		goDieText.x = 300;
+		window.goDieText = new PIXI.Text(text,{fontFamily : 'Arial', fontSize: 48, fill : 0xff1010});
+		goDieText.x = 400;
 		goDieText.y = 200;
+		goDieText.anchor.set(0.5);
 		app.stage.addChild(goDieText);
-		you.destroy();
-		//app.stop();
+		//you.destroy();
+		setTimeout(function(){
+			app.stop();
+			window.status = 'over';
+		},100);
+		
 	}
 	function levelTop(obj){
 		console.log('升级');
@@ -239,7 +270,7 @@
 			return;
 		}
 		obj.level +=1;
-		obj.setTransform(obj.x,obj.y,obj.level,obj.level);
+		obj.scale.set(obj.level,obj.level);
 		opt.speed = opt.speed*1.5;
 	}
 	//检测碰撞
