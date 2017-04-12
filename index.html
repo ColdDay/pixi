@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title></title>
+	<title>变态版大鱼吃小鱼</title>
 	<script src="js/pixi.min.js"></script>
 	<script src="js/zepto.js"></script>
 	<style type="text/css">
@@ -17,6 +17,7 @@
 <body>
 <script type="text/javascript">
 	var score = 0;
+	var startTime = new Date();
 	var showBoss = false;
 	var moveTop = null;
 	var moveLeft = null;
@@ -27,12 +28,14 @@
 	var AppW = app.renderer.width;
 	var AppH = app.renderer.height;
 	var opt = {
-		speed:5,
+		speed:8,
 		duck_speed:1,
 		fish_speed:2,
-		snail_speed:8,
-		lobster_speed:1.5,
-		shark_speed:6
+		snail_speed:6,
+		lobster_speed:2,
+		shark_speed:7,
+		bomb_speed:5,
+		maxLevel:3
 	}
 	var features = [];	//存放海洋中的生物
 	//鸭子
@@ -58,13 +61,22 @@
 		scoreText.x = 600;
 		scoreText.y = 10;
 		app.stage.addChild(scoreText);
+
+		//创建生存时间
+		window.timeText = new PIXI.Text('坚持时间',{fontFamily : 'Arial', fontSize: 24, fill : 0xff1010, align : 'center'});
+		timeText.x = 50;
+		timeText.y = 10;
+		app.stage.addChild(timeText);
+
+
 		//主角
 		window.me = new PIXI.Sprite(resources.me.texture);
 		me.x = AppW/2;
 		me.y = AppH /2;
 		app.stage.addChild(me);
 		me.level = 1;
-		me.anchor.set(0.5);
+		me.anchor.set(0.5,0.5);
+		me.tint = Math.random() * 0xFFFFFF;
 
 		var fish = new PIXI.Sprite(resources.fish.texture);
 		fish.x = AppW * Math.random();
@@ -83,7 +95,7 @@
 		duck.name = 'duck';
 
 		var snail = new PIXI.Sprite(resources.snail.texture);
-		snail.x = AppW * Math.random();
+		snail.x = AppW * Math.random() - 1000;
 		snail.y = AppH * Math.random();
 		app.stage.addChild(snail);
 		features.push(snail);
@@ -91,16 +103,13 @@
 		snail.name = 'snail';
 
 		var lobster = new PIXI.Sprite(resources.lobster.texture);
-		lobster.x = AppW * Math.random();
+		lobster.x = AppW * Math.random() - 2000;
 		lobster.y = AppH * Math.random();
 		app.stage.addChild(lobster);
 		features.push(lobster);
 		lobster.level= 3;
 		lobster.name = 'lobster';
-		//lobster.anchor.set(0.5);
-		//lobster.rotation = 180 /57.29578;
 
-	
 
 		var bomb = new PIXI.Sprite(resources.bomb.texture);
 		bomb.x = AppW * Math.random();
@@ -112,7 +121,7 @@
 
 		//大鲨鱼
 		var shark = new PIXI.Sprite(resources.shark.texture);
-		shark.x = 1000;
+		shark.x = 3000;
 		shark.y = AppH * Math.random();
 		app.stage.addChild(shark);
 		features.push(shark);
@@ -175,22 +184,20 @@
 					shark.y = Math.random()*AppH
 				}
 			}
-			//鲨鱼
-			
-			bomb.y += opt.shark_speed;
+			//导弹
+			bomb.y += opt.bomb_speed;
 			if(bomb.y > AppH){
 				bomb.x = Math.random()*AppH;
 				bomb.y = bomb.height*-1;
 			}
-			
-			
-			
-
+			var now = new Date();
+			var allTime = (now.getTime() - startTime.getTime())/1000;
+			timeText.text = '坚持了' + allTime.toFixed(2) + '秒'; 
 
 			//检测碰撞
 			for(var i in features){
 				var obj = features[i];
-				if(checkCrash(obj,me)){
+				if(crashArea(obj,me)){
 					if(obj.level > me.level){
 						//go die
 						goDie('die',obj,me);
@@ -198,10 +205,10 @@
 					}else{
 						score = score + 20 * obj.level;
 						scoreText.text= '你的分数：'+ score;
-						if(score >=3000){
+						if(score >=10000){
 							goDie('win')
 						}
-						if(score >= 100*me.level){
+						if(score >= 100*me.level && me.level < opt.maxLevel){
 							//升级主角
 							levelTop(me);
 						}
@@ -218,7 +225,7 @@
 		if(status != 'over'){
 			if(event.keyCode == 37){ 
 				window.moveLeft = true;
-				me.anchor.set(0.5);
+				me.anchor.set(0.5,0.5);
 				me.rotation = 180 /57.29578;
 			}else if (event.keyCode == 39){ 
 				window.moveRight = true;
@@ -245,7 +252,7 @@
 	function goDie(type,boss,you){
 		//创建分数面板
 		var text = '你歇菜了'
-		if(boss.name == 'lobster'){
+		if(boss && boss.name == 'lobster'){
 			text = '螃蟹有毒'
 		}
 		if(type == 'win'){
@@ -260,42 +267,56 @@
 		setTimeout(function(){
 			app.stop();
 			window.status = 'over';
-		},100);
+		},20);
 		
 	}
 	function levelTop(obj){
-		console.log('升级');
+		obj.level +=1;
+		obj.scale.set(obj.level,obj.level);
+		opt.speed = opt.speed*1.5;
+
 		if(obj.level >= 3){
 			window.showBoss = true;
 			return;
 		}
-		obj.level +=1;
-		obj.scale.set(obj.level,obj.level);
-		opt.speed = opt.speed*1.5;
-	}
-	//检测碰撞
-	function checkCrash (obj1,obj2){
-		var bounds = obj2.getBounds();
-		var x1 = obj1.x;
-		var x2 = obj1.x + obj1.width;
-		var y1 = obj1.y;
-		var y2 = obj1.y + obj1.height;
 		
-		var bounds2 = obj1.getBounds();
-		var x12 = obj2.x;
-		var x22 = obj2.x + obj2.width;
-		var y12 = obj2.y;
-		var y22 = obj2.y + obj2.height;
+	}
 
-		if(bounds.contains(x1,y1) || bounds.contains(x2,y1) || bounds.contains(x1,y2) || bounds.contains(x2,y2)){
-			return true;
-		}else if(bounds2.contains(x12,y12) || bounds2.contains(x22,y12) || bounds2.contains(x12,y22) || bounds2.contains(x22,y22)){
-			return true;
-		} else{
-			return false;
-		}
-}
+//碰撞检测--非像素级
+var crashArea = function(s1, s2) {
+	//对角线坐标
+	var A = s1.x;
+	var B = s1.y;
+	var C = s1.x + s1.width;
+	var D = s1.y + s1.height;
 
+	//s2被旋转过，原点被设为中心，所以原点坐标位置发生改变，需要转换回来
+	var E = s2.x - s2.width/2;
+	var F = s2.y - s2.height/2;
+	var G = E + s2.width;
+	var H = F + s2.height;
+
+  // 没有相交
+  if (C <= E || G <= A || D <= F || H <= B){
+  	return false
+  }  
+
+  var tmpX, tmpY;
+
+  if (E > A) {
+   tmpX = G < C ? [E, G] : [E, C];
+  } else {
+   tmpX = C < G ? [A, C] : [A, G];
+  }
+
+  if (F > B) {
+   tmpY = H < D ? [F, H] : [F, D];
+  } else {
+   tmpY = D < H ? [B, D] : [B, H];
+  }
+  var insertBounds = [tmpX[0], tmpY[0], tmpX[1], tmpY[1]]
+  return [tmpX[0], tmpY[0], tmpX[1], tmpY[1]];
+};
 
 
 
