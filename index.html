@@ -16,6 +16,7 @@
 </head>
 <body>
 <script type="text/javascript">
+
 	var score = 0;
 	var startTime = new Date();
 	var showBoss = false;
@@ -32,8 +33,8 @@
 		duck_speed:1,
 		fish_speed:2,
 		snail_speed:6,
-		lobster_speed:2,
-		shark_speed:7,
+		lobster_speed:4,
+		shark_speed:6,
 		bomb_speed:5,
 		maxLevel:3
 	}
@@ -128,6 +129,14 @@
 		shark.level = 5;
 		shark.name = 'shark';
 
+		setTimeout(function(){
+			if(score < 100){
+				//你玩完了
+				showBoss = true;
+				opt.shark_speed = opt.shark_speed*2;
+				opt.bomb_speed = opt.bomb_speed*2;
+			}
+		},30000)
 
 		app.ticker.add(function(){
 			//控制主角鸭子的行为
@@ -192,7 +201,7 @@
 			}
 			var now = new Date();
 			var allTime = (now.getTime() - startTime.getTime())/1000;
-			timeText.text = '坚持了' + allTime.toFixed(2) + '秒'; 
+			timeText.text = '生存时间：' + allTime.toFixed(0) + '秒'; 
 
 			//检测碰撞
 			for(var i in features){
@@ -251,12 +260,22 @@
 	});
 	function goDie(type,boss,you){
 		//创建分数面板
-		var text = '你歇菜了'
+		var now = new Date();
+		var allTime = (now.getTime() - startTime.getTime())/1000;
+		var text = '歇菜--';
 		if(boss && boss.name == 'lobster'){
 			text = '螃蟹有毒'
 		}
+		if(boss && boss.name == 'snail'){
+			text = '蜗牛壳硬';
+		}
 		if(type == 'win'){
 			text = '少年，不要沉迷于游戏'
+		}
+		var useTime = allTime.toFixed(0);
+		text += '--坚持了' + useTime + '秒'
+		if(useTime > 60){
+			text = useTime+'秒---真男人也'
 		}
 		window.goDieText = new PIXI.Text(text,{fontFamily : 'Arial', fontSize: 48, fill : 0xff1010});
 		goDieText.x = 400;
